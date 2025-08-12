@@ -1,0 +1,30 @@
+# OS
+.DS_Store
+Thumbs.db
+
+# IntelliJ / IDEA
+.idea/
+*.iml
+out/
+
+# Gradle
+.gradle/
+build/
+!gradle/wrapper/gradle-wrapper.jar
+!gradle/wrapper/gradle-wrapper.properties
+
+# IntelliJ Platform Plugin sandbox
+**/sandbox/**
+
+# Logs
+*.log
+
+# Packaging artifacts
+build/distributions/
+
+# Kotlin/Java
+*.class
+
+# Misc
+*.swp
+*.swo

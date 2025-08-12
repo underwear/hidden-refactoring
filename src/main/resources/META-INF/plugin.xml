@@ -1,0 +1,52 @@
+<idea-plugin>
+    <id>com.hiddenrefactoring.hidden-refactoring</id>
+    <name>Hidden Refactoring</name>
+    <vendor email="" url="">Hidden Refactoring</vendor>
+
+    <description>
+        <![CDATA[
+        Hidden Refactoring: attach IDE-level comments to PHP classes, methods, and files without modifying source code.
+        ]]>
+    </description>
+
+    <depends>com.intellij.modules.platform</depends>
+    <depends>com.jetbrains.php</depends>
+
+    <extensions defaultExtensionNs="com.intellij">
+        <!-- Notifications -->
+        <notificationGroup id="Hidden Refactoring" displayType="BALLOON" isLogByDefault="false"/>
+        <!-- Project-level service for comments storage -->
+        <projectService serviceImplementation="com.hiddenrefactoring.storage.CommentsService"/>
+        <!-- Gutter icon provider on PHP elements with comments -->
+        <codeInsight.lineMarkerProvider language="PHP" implementationClass="com.hiddenrefactoring.gutter.CommentLineMarkerProvider"/>
+        <!-- Native Code Vision provider for inline hints with comments -->
+        <codeInsight.codeVisionProvider implementation="com.hiddenrefactoring.codevision.PhpCommentsCodeVisionProvider"/>
+        <config.codeVisionGroupSettingProvider implementation="com.hiddenrefactoring.codevision.PhpCommentsCodeVisionGroupProvider"/>
+        <!-- Aliases inline renderer manager -->
+        <editorFactoryListener implementation="com.hiddenrefactoring.editor.AliasesInlayManager"/>
+        <!-- Inline comments inlay manager (emoji at call sites, block lists above declarations) -->
+        <editorFactoryListener implementation="com.hiddenrefactoring.editor.InlineCommentsInlayManager"/>
+        <!-- Tool window to list comments -->
+        <toolWindow id="Hidden Refactoring"
+                    anchor="right"
+                    canCloseContents="true"
+                    factoryClass="com.hiddenrefactoring.ui.CommentsToolWindowFactory"/>
+    </extensions>
+
+    <actions>
+        <action id="com.hiddenrefactoring.actions.AddCommentAction"
+                class="com.hiddenrefactoring.actions.AddCommentAction"
+                text="Hidden Refactoring: Add Comment"
+                description="Add an IDE-level comment to the selected PHP element or file">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt C"/>
+        </action>
+        <action id="com.hiddenrefactoring.actions.RenameAliasAction"
+                class="com.hiddenrefactoring.actions.RenameAliasAction"
+                text="Hidden Refactoring: Set Alias"
+                description="Add or edit an alias for the selected name (variable/parameter/method/function/class)">
+            <add-to-group group-id="EditorPopupMenu" anchor="last"/>
+            <keyboard-shortcut keymap="$default" first-keystroke="ctrl alt R"/>
+        </action>
+    </actions>
+</idea-plugin>
