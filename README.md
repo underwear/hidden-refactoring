@@ -4,19 +4,12 @@ Attach IDE-level comments and human-friendly aliases to PHP code — with zero c
 
 Ever skimmed a teammate's code, left a mental note, and didn't want to litter the repo with WIP commits or noisy diffs? Hidden Refactoring lets you annotate and rename in your IDE only. Keep your flow, keep your repo clean.
 
-P.S. Made during some vibe-coding sessions. Thanks, ChatGPT, for rubber-ducking at 3 a.m. ¯\\_(ツ)_/¯
+P.S. Made during some vibe-coding sessions. Thanks, ChatGPT.
 
 ## Features
 - __Inline comments (Code Vision)__ over classes/methods/functions/files
-  - First line preview with `💬`, click to view/edit/delete
-  - Nicely formatted popup with timestamp
-- __Aliases where you read code__
-  - Inline aliases for variables, parameters, methods, functions, and classes
-  - Color-matched to original identifiers (incl. method/function usages)
-  - PHP 8 named arguments supported: alias shows right after `param:` label
-- __Non-invasive & persistent__
-  - Lives in project files under `.idea/` only; nothing touches your PHP sources
-  - Keys survive typical refactorings
+- __Aliases where you read code__: inline aliases for variables, parameters, methods, functions, and classes
+- __Non-invasive & persistent__: Lives in project files under `.idea/` only; nothing touches your PHP sources
 
 ## Requirements
 - PhpStorm 2024.3+ (build 243.*)
@@ -50,8 +43,4 @@ Then install the ZIP from `build/distributions/` as above.
 
 ## Issues & ideas
 - Bugs, ideas, requests — please open an Issue.
-- Have a wild feature idea for the next vibe-coding session? Drop it in Issues; best ones get built first.
-
-## Privacy
-- All data stays locally in the project: `.idea/hidden-refactoring-comments.xml`
-- No network calls; intended for solo developer workflow
+- Have a wild feature idea for the my next vibe-coding session? Drop it in Issues; best ones get built first.
