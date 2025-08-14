@@ -154,13 +154,16 @@ class AliasesInlayManager : EditorFactoryListener {
 
         val dumbService = DumbService.getInstance(project)
         app.runReadAction {
+            // Per-refresh set of inserted alias inlays to prevent duplicates within the same cycle
+            val addedAliasEntries = mutableSetOf<Pair<Int, com.hiddenrefactoring.model.AliasKey>>()
             // Internal implementation used by wrappers below
             fun internalAddIfAliasExists(
                 offset: Int,
                 tokenKey: TextAttributesKey,
                 originalRange: TextRange?,
                 buildKey: () -> com.hiddenrefactoring.model.AliasKey?,
-                buildFallbackKey: (() -> com.hiddenrefactoring.model.AliasKey?)? = null
+                buildFallbackKey: (() -> com.hiddenrefactoring.model.AliasKey?)? = null,
+                prefixDollar: Boolean = true
             ) {
                 val primary = buildKey() ?: return
                 var keyUsed = primary
@@ -176,6 +179,17 @@ class AliasesInlayManager : EditorFactoryListener {
                     }
                 }
                 if (alias == null) return
+                // Per-refresh de-duplication by (offset, key)
+                run {
+                    val entry = Pair(offset, keyUsed)
+                    if (!addedAliasEntries.add(entry)) return
+                }
+                // Deduplicate: if an alias inlay already exists at this offset, skip adding another
+                run {
+                    val existing = editor.inlayModel.getInlineElementsInRange(offset, offset + 1)
+                        .any { it.renderer is AliasRenderer }
+                    if (existing) return
+                }
                 // Resolve alias color: try actual token at originalRange, fallback to scheme tokenKey
                 val aliasColor: Color = run {
                     if (originalRange != null) {
@@ -204,7 +218,7 @@ class AliasesInlayManager : EditorFactoryListener {
                     }
                 }
                 // Alias inlay
-                editor.inlayModel.addInlineElement(offset, true, AliasRenderer(project, keyUsed, alias, aliasColor))
+                editor.inlayModel.addInlineElement(offset, true, AliasRenderer(project, keyUsed, alias, aliasColor, prefixDollar))
                 // Original styling (gray + strikeout)
                 if (originalRange != null) {
                     val mm = (editor as EditorEx).markupModel
@@ -234,7 +248,7 @@ class AliasesInlayManager : EditorFactoryListener {
                 originalRange: TextRange?,
                 buildKey: () -> com.hiddenrefactoring.model.AliasKey?
             ) {
-                internalAddIfAliasExists(offset, tokenKey, originalRange, buildKey, null)
+                internalAddIfAliasExists(offset, tokenKey, originalRange, buildKey, null, true)
             }
 
             // Wrapper that supports a fallback key supplier
@@ -245,13 +259,55 @@ class AliasesInlayManager : EditorFactoryListener {
                 buildFallbackKey: () -> com.hiddenrefactoring.model.AliasKey?,
                 buildKey: () -> com.hiddenrefactoring.model.AliasKey?
             ) {
-                internalAddIfAliasExists(offset, tokenKey, originalRange, buildKey, buildFallbackKey)
+                internalAddIfAliasExists(offset, tokenKey, originalRange, buildKey, buildFallbackKey, true)
+            }
+
+            // Wrapper for named-argument label aliases (render without $ for parameters)
+            fun addIfAliasExistsNoDollar(
+                offset: Int,
+                tokenKey: TextAttributesKey,
+                originalRange: TextRange?,
+                buildKey: () -> com.hiddenrefactoring.model.AliasKey?
+            ) {
+                internalAddIfAliasExists(offset, tokenKey, originalRange, buildKey, null, false)
             }
 
             // Variables
             PsiTreeUtil.findChildrenOfType(psiFile, Variable::class.java).forEach { variable ->
                 val range = variable.textRange
                 val end = range.endOffset
+                // If this variable is the value part of a named argument (label: value),
+                // suppress the variable alias to avoid duplication next to the label alias.
+                run {
+                    val doc = editor.document
+                    val seq = doc.charsSequence
+                    val start = range.startOffset
+                    var i = start - 1
+                    while (i >= 0 && Character.isWhitespace(seq[i])) i--
+                    if (i >= 0 && seq[i] == ':') {
+                        var k = i - 1
+                        while (k >= 0 && Character.isWhitespace(seq[k])) k--
+                        // Walk back over identifier characters to find a potential label
+                        var labelEnd = k + 1
+                        while (k >= 0) {
+                            val ch = seq[k]
+                            if (ch == '_' || Character.isLetterOrDigit(ch.code)) { k-- } else break
+                        }
+                        val labelStart = k + 1
+                        if (labelStart < labelEnd) {
+                            // Ensure we're inside a call expression (function or method)
+                            val call = PsiTreeUtil.getParentOfType(variable, FunctionReference::class.java, true)
+                                ?: PsiTreeUtil.getParentOfType(variable, MethodReference::class.java, true)
+                            if (call != null) {
+                                val ctr = call.textRange
+                                if (ctr.startOffset <= labelStart && end <= ctr.endOffset) {
+                                    // Likely a named argument value; skip variable alias
+                                    return@forEach
+                                }
+                            }
+                        }
+                    }
+                }
                 addIfAliasExistsWithFallback(
                     end,
                     DefaultLanguageHighlighterColors.LOCAL_VARIABLE,
@@ -381,7 +437,13 @@ class AliasesInlayManager : EditorFactoryListener {
                             // map of parameters by name for quick lookup
                             val params = PsiTreeUtil.findChildrenOfType(resolved, Parameter::class.java)
                             var i = open + 1
+                            var nested = 0
                             while (i < close) {
+                                val ch = seq[i]
+                                // Track nested parentheses to only handle top-level arguments
+                                if (ch == '(') { nested++; i++; continue }
+                                if (ch == ')') { if (nested > 0) nested--; i++; continue }
+                                if (nested > 0) { i++; continue }
                                 // skip whitespace and commas
                                 while (i < close && (Character.isWhitespace(seq[i]) || seq[i] == ',')) i++
                                 if (i >= close) break
@@ -402,7 +464,7 @@ class AliasesInlayManager : EditorFactoryListener {
                                         val param = params.firstOrNull { it.name == label }
                                         if (param != null) {
                                             val labelRange = TextRange(nameStart, nameEnd)
-                                            addIfAliasExists(labelRange.endOffset, DefaultLanguageHighlighterColors.PARAMETER, labelRange) {
+                                            addIfAliasExistsNoDollar(labelRange.endOffset, DefaultLanguageHighlighterColors.PARAMETER, labelRange) {
                                                 AliasKeyFactory.fromParameter(param)
                                             }
                                         }
@@ -500,7 +562,13 @@ class AliasesInlayManager : EditorFactoryListener {
                             if (target != null) {
                                 val params = PsiTreeUtil.findChildrenOfType(target, Parameter::class.java)
                                 var i = open + 1
+                                var nested = 0
                                 while (i < close) {
+                                    val ch = seq[i]
+                                    // Track nested parentheses to only handle top-level arguments
+                                    if (ch == '(') { nested++; i++; continue }
+                                    if (ch == ')') { if (nested > 0) nested--; i++; continue }
+                                    if (nested > 0) { i++; continue }
                                     while (i < close && (Character.isWhitespace(seq[i]) || seq[i] == ',')) i++
                                     if (i >= close) break
                                     val c = seq[i]
@@ -519,7 +587,7 @@ class AliasesInlayManager : EditorFactoryListener {
                                             val param = params.firstOrNull { it.name == label }
                                             if (param != null) {
                                                 val labelRange = TextRange(nameStart, nameEnd)
-                                                addIfAliasExists(labelRange.endOffset, DefaultLanguageHighlighterColors.PARAMETER, labelRange) {
+                                                addIfAliasExistsNoDollar(labelRange.endOffset, DefaultLanguageHighlighterColors.PARAMETER, labelRange) {
                                                     AliasKeyFactory.fromParameter(param)
                                                 }
                                             }
@@ -564,13 +632,14 @@ class AliasesInlayManager : EditorFactoryListener {
         private val project: Project,
         private val key: com.hiddenrefactoring.model.AliasKey,
         private val alias: String,
-        private val aliasColor: Color
+        private val aliasColor: Color,
+        private val prefixDollar: Boolean
     ) : com.intellij.openapi.editor.EditorCustomElementRenderer {
         private val padding = 2
         private val text: String
             get() = " " + when (key.type) {
-                com.hiddenrefactoring.model.ElementType.VARIABLE,
-                com.hiddenrefactoring.model.ElementType.PARAMETER -> "$" + alias
+                com.hiddenrefactoring.model.ElementType.VARIABLE -> "$" + alias
+                com.hiddenrefactoring.model.ElementType.PARAMETER -> if (prefixDollar) "$" + alias else alias
                 com.hiddenrefactoring.model.ElementType.METHOD,
                 com.hiddenrefactoring.model.ElementType.FUNCTION -> alias
                 else -> "≈${alias}"

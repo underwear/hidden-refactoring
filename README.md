@@ -4,12 +4,9 @@ Attach IDE-level comments and human-friendly aliases to PHP code — with zero c
 
 Ever skimmed a teammate's code, left a mental note, and didn't want to litter the repo with WIP commits or noisy diffs? Hidden Refactoring lets you annotate and rename in your IDE only. Keep your flow, keep your repo clean.
 
-P.S. Made during some vibe-coding sessions. Thanks, ChatGPT.
-
 ## Features
-- __Inline comments (Code Vision)__ over classes/methods/functions/files
-- __Aliases where you read code__: inline aliases for variables, parameters, methods, functions, and classes
-- __Non-invasive & persistent__: Lives in project files under `.idea/` only; nothing touches your PHP sources
+- __Comments on PHP code__ (Code Vision hints) for classes, methods, functions, and files — quick popup to view/edit/delete.
+- __On‑the‑fly aliases__ for variables, parameters, methods, and functions across the project — without touching the source.
 
 ## Requirements
 - PhpStorm 2024.3+ (build 243.*)
