@@ -1,8 +1,6 @@
 # Hidden Refactoring (PhpStorm Plugin)
 
-Attach IDE-level comments and human-friendly aliases to PHP code — with zero changes to the source.
-
-Ever skimmed a teammate's code, left a mental note, and didn't want to litter the repo with WIP commits or noisy diffs? Hidden Refactoring lets you annotate and rename in your IDE only. Keep your flow, keep your repo clean.
+**Hidden Refactoring** lets you leave notes and rename methods/variables **with zero changes to the repo**.
 
 ## Features
 - __Comments on PHP code__ (Code Vision hints) for classes, methods, functions, and files — quick popup to view/edit/delete.
