@@ -8,11 +8,6 @@
 - __Comments on PHP code__ (Code Vision hints) for classes, methods, functions, and files — quick popup to view/edit/delete.
 - __On‑the‑fly aliases__ for variables, parameters, methods, and functions across the project — without touching the source.
 
-## Requirements
-- PhpStorm 2024.3+ (build 243.*)
-- PHP plugin enabled: `com.jetbrains.php`
-- JDK 17+ for building
-
 ## Installation
 Recommended: download the prebuilt ZIP from GitHub Releases and install from disk.
 
