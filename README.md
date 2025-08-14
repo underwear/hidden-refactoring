@@ -4,6 +4,8 @@
 
 ![Demo](docs/demo-3.png)
 
+> Disclaimer: "Hidden Refactoring" is under development. The plugin may be unstable.
+
 ## Features
 - __Comments on PHP code__ (Code Vision hints) for classes, methods, functions, and files — quick popup to view/edit/delete.
 - __On‑the‑fly aliases__ for variables, parameters, methods, and functions across the project — without touching the source.
