@@ -2,7 +2,7 @@
 
 **Hidden Refactoring** lets you leave notes and rename methods/variables **with zero changes to the repo**.
 
-![Demo](docs/demo-func.png)
+![Demo](docs/demo-3.png)
 
 ## Features
 - __Comments on PHP code__ (Code Vision hints) for classes, methods, functions, and files — quick popup to view/edit/delete.
